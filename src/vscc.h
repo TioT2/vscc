@@ -5,7 +5,6 @@
 #ifndef VSCC_H_
 #define VSCC_H_
 
-#include <stddef.h>
 #include <stdbool.h>
 #include <stdio.h>
 
@@ -16,6 +15,7 @@ typedef enum __VsccRuleType {
     VSCC_RULE_OPTIONAL,        ///< once or none               ... ?
     VSCC_RULE_REPEAT,          ///< repeat n times             ...* or ...+
     VSCC_RULE_STRING_TERMINAL, ///< string terminal symbol     "..."
+    VSCC_RULE_CHAR_TERMINAL,   ///< character terminal symbol  [...]
     VSCC_RULE_REFERENCE,       ///< reference to another rule  ...
     VSCC_RULE_END,             ///< sequence end               $
     VSCC_RULE_EMPTY,           ///< empty rule                 
@@ -23,6 +23,12 @@ typedef enum __VsccRuleType {
 
 /// @brief grammar rule structure forward declaration
 typedef struct __VsccRule VsccRule;
+
+/// @brief character range
+typedef struct __VsccRuleCharRange {
+    char first; ///< first matched character
+    char last;  ///< last matched character
+} VsccRuleCharRange;
 
 /// @brief grammar rule representation structure
 struct __VsccRule {
@@ -43,6 +49,11 @@ struct __VsccRule {
             bool       atLeastOnce; ///< it's required to repeat the rule at least once
             VsccRule * rule;        ///< repeated rule
         } repeat;
+
+        struct {
+            VsccRuleCharRange * ranges; ///< character ranges
+            size_t              count;  ///< count of matched character ranges
+        } charTerminal;
 
         VsccRule *optional;         ///< optional rule
         const char *stringTerminal; ///< string constant
@@ -101,6 +112,16 @@ VsccRule * vsccRuleRepeat( VsccRule *rule, bool atLeastOnce );
  * @return created rule
  */
 VsccRule * vsccRuleStringTerminal( const char *terminal );
+
+/**
+ * @brief terminal symbol rule constructor
+ * 
+ * @param[in] ranges supported character range array (non-null)
+ * @param[in] count  count of ranges in array (>= 1)
+ * 
+ * @return created rule
+ */
+VsccRule * vsccRuleCharTerminal( const VsccRuleCharRange *ranges, size_t count );
 
 /**
  * @brief referential rule constructor

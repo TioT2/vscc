@@ -125,6 +125,21 @@ VsccRule * vsccRuleStringTerminal( const char *terminal ) {
     return result;
 } // vsccRuleStringTerminal
 
+VsccRule * vsccRuleCharTerminal( const VsccRuleCharRange *ranges, size_t count ) {
+    VsccRuleCharRange *resultRanges = NULL;
+    VsccRule *result = NULL;
+
+    if (!vsccRuleAlloc(count * sizeof(VsccRuleCharRange), &result, (void **)&resultRanges))
+        return NULL;
+    memcpy(resultRanges, ranges, sizeof(VsccRuleCharRange) * count);
+
+    result->type = VSCC_RULE_CHAR_TERMINAL;
+    result->charTerminal.count = count;
+    result->charTerminal.ranges = resultRanges;
+
+    return result;
+} // vsccRuleCharTerminal
+
 VsccRule * vsccRuleReference( const char *reference ) {
     const size_t length = strlen(reference);
     char *resultReference = NULL;
@@ -196,14 +211,17 @@ VsccRule * vsccRuleClone( const VsccRule *rule ) {
 
     }
 
-    case VSCC_RULE_OPTIONAL :
+    case VSCC_RULE_OPTIONAL:
         return vsccRuleOptional(vsccRuleClone(rule->optional));
 
-    case VSCC_RULE_REPEAT   :
+    case VSCC_RULE_REPEAT:
         return vsccRuleRepeat(vsccRuleClone(rule->repeat.rule), rule->repeat.atLeastOnce);
 
-    case VSCC_RULE_STRING_TERMINAL :
+    case VSCC_RULE_STRING_TERMINAL:
         return vsccRuleStringTerminal(rule->stringTerminal);
+
+    case VSCC_RULE_CHAR_TERMINAL:
+        return vsccRuleCharTerminal(rule->charTerminal.ranges, rule->charTerminal.count);
 
     case VSCC_RULE_REFERENCE:
         return vsccRuleReference(rule->reference);
@@ -240,6 +258,7 @@ void vsccRuleDtor( VsccRule *rule ) {
         break;
 
     case VSCC_RULE_REFERENCE:
+    case VSCC_RULE_CHAR_TERMINAL:
     case VSCC_RULE_STRING_TERMINAL:
     case VSCC_RULE_END:
     case VSCC_RULE_EMPTY:
@@ -318,12 +337,33 @@ void vsccRulePrint( FILE *out, const VsccRule *rule ) {
         fprintf(out, "\"%s\"", rule->stringTerminal);
         break;
 
+    case VSCC_RULE_CHAR_TERMINAL:
+        fprintf(out, "[");
+        for (size_t i = 0; i < rule->charTerminal.count; i++) {
+            VsccRuleCharRange range = rule->charTerminal.ranges[i];
+
+            if (range.first == range.last)
+                fprintf(out, "%s%c",
+                    range.first == '-' ? "\\" : "",
+                    range.first
+                );
+            else
+                fprintf(out, "%s%c-%s%c",
+                    range.first == '-' ? "\\" : "",
+                    range.first,
+                    range.last == '-' ? "\\" : "",
+                    range.last
+                );
+        }
+        fprintf(out, "]");
+        break;
+
     case VSCC_RULE_REFERENCE:
         fprintf(out, "%s", rule->reference);
         break;
 
     case VSCC_RULE_END:
-        fprintf(out, ";");
+        fprintf(out, "$");
         break;
 
     case VSCC_RULE_EMPTY:
