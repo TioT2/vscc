@@ -41,6 +41,8 @@ static bool vsccRuleAlloc( size_t additionalDataSize, VsccRule **ruleDst, void *
 } // vsccRuleAlloc
 
 VsccRule * vsccRuleSequence( VsccRule **rules, size_t count ) {
+    assert(count > 0);
+
     VsccRule **array = NULL;
     VsccRule *result = NULL;
 
@@ -59,6 +61,8 @@ VsccRule * vsccRuleSequence( VsccRule **rules, size_t count ) {
 } // vsccRuleSequence
 
 VsccRule * vsccRuleVariant( VsccRule **rules, size_t count ) {
+    assert(count > 0);
+
     VsccRule **array = NULL;
     VsccRule *result = NULL;
 
@@ -201,16 +205,20 @@ void vsccRuleDtor( VsccRule *rule ) {
     case VSCC_RULE_SEQUENCE:
         for (size_t i = 0; i < rule->sequence.count; i++)
             vsccRuleDtor(rule->sequence.rules[i]);
+        break;
 
     case VSCC_RULE_VARIANT:
         for (size_t i = 0; i < rule->variant.count; i++)
             vsccRuleDtor(rule->variant.rules[i]);
+        break;
 
     case VSCC_RULE_OPTIONAL:
         vsccRuleDtor(rule->optional);
+        break;
 
     case VSCC_RULE_REPEAT:
         vsccRuleDtor(rule->repeat.rule);
+        break;
 
     case VSCC_RULE_TERMINAL:
     case VSCC_RULE_END:
@@ -220,3 +228,84 @@ void vsccRuleDtor( VsccRule *rule ) {
 
     free(rule);
 } // vsccRuleDtor
+
+void vsccRulePrint( FILE *out, const VsccRule *rule ) {
+    switch (rule->type) {
+    case VSCC_RULE_SEQUENCE: {
+        fprintf(out, "{");
+
+        assert(rule->sequence.count > 0);
+        vsccRulePrint(out, rule->sequence.rules[0]);
+
+        for (size_t i = 1; i < rule->sequence.count; i++) {
+            fprintf(out, " ");
+            vsccRulePrint(out, rule->sequence.rules[i]);
+        }
+        fprintf(out, "}");
+        break;
+    }
+
+    case VSCC_RULE_VARIANT: {
+        fprintf(out, "{");
+
+        assert(rule->sequence.count > 0);
+        vsccRulePrint(out, rule->variant.rules[0]);
+
+        for (size_t i = 1; i < rule->variant.count; i++) {
+            fprintf(out, " | ");
+            vsccRulePrint(out, rule->variant.rules[i]);
+        }
+        fprintf(out, "}");
+        break;
+    }
+
+    case VSCC_RULE_OPTIONAL: {
+        bool surround = true
+            && rule->optional->type != VSCC_RULE_VARIANT
+            && rule->optional->type != VSCC_RULE_SEQUENCE
+            && rule->optional->type != VSCC_RULE_REPEAT
+            && rule->optional->type != VSCC_RULE_OPTIONAL
+        ;
+
+        if (surround) fprintf(out, "{");
+        vsccRulePrint(out, rule->optional);
+        if (surround) fprintf(out, "}");
+        fprintf(out, "?");
+        break;
+    }
+
+    case VSCC_RULE_REPEAT: {
+        bool surround = true
+            && rule->repeat.rule->type != VSCC_RULE_VARIANT
+            && rule->repeat.rule->type != VSCC_RULE_SEQUENCE
+            && rule->repeat.rule->type != VSCC_RULE_REPEAT
+            && rule->repeat.rule->type != VSCC_RULE_OPTIONAL
+        ;
+
+        if (surround) fprintf(out, "{");
+        vsccRulePrint(out, rule->repeat.rule);
+        if (surround) fprintf(out, "}");
+        fprintf(
+            out,
+            rule->repeat.atLeastOnce
+                ? "+"
+                : "*"
+        );
+        break;
+    }
+
+    case VSCC_RULE_TERMINAL:
+        fprintf(out, "\"%s\"", rule->terminal);
+        break;
+
+    case VSCC_RULE_END:
+        fprintf(out, ";");
+        break;
+
+    case VSCC_RULE_EMPTY:
+        // literally empty
+        break;
+    }
+} // vsccRulePrint
+
+// vscc_rule.c

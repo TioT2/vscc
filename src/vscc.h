@@ -7,16 +7,17 @@
 
 #include <stddef.h>
 #include <stdbool.h>
+#include <stdio.h>
 
 /// @brief rule type ('tag')
 typedef enum __VsccRuleType {
-    VSCC_RULE_SEQUENCE,   ///< ... , ... (first and second)
-    VSCC_RULE_VARIANT,    ///< ... | ... (first or second)
-    VSCC_RULE_OPTIONAL,   ///< [ ... ] (once or none)
-    VSCC_RULE_REPEAT,     ///< { ... } (repeat n times)
-    VSCC_RULE_TERMINAL,   ///< terminal symbol
-    VSCC_RULE_END,        ///< sequence end
-    VSCC_RULE_EMPTY,      ///< empty rule
+    VSCC_RULE_SEQUENCE,   ///< first and second    ... ...
+    VSCC_RULE_VARIANT,    ///< first or second     ... | ...
+    VSCC_RULE_OPTIONAL,   ///< once or none        ... ?
+    VSCC_RULE_REPEAT,     ///< repeat n times      ...* or ...+
+    VSCC_RULE_TERMINAL,   ///< terminal symbol     "..."
+    VSCC_RULE_END,        ///< sequence end        $
+    VSCC_RULE_EMPTY,      ///< empty rule          
 } VsccRuleType;
 
 /// @brief grammar rule structure forward declaration
@@ -128,6 +129,14 @@ VsccRule * vsccRuleClone( const VsccRule *rule );
  * @param[in] rule rule to destroy (nullable)
  */
 void vsccRuleDtor( VsccRule *rule );
+
+/**
+ * @brief rule display function
+ * 
+ * @param[in] out  text file to write rule to
+ * @param[in] rule rule to display (non-null)
+ */
+void vsccRulePrint( FILE *out, const VsccRule *rule );
 
 /// @brief name-rule pair
 typedef struct __VsccGrammarPair {

@@ -12,8 +12,20 @@
  * @return exit status
  */
 int main( void ) {
-    int tridcat = 30;
-    printf("CGSG FOREVER!!! %d!!!", tridcat);
+    VsccRule *rules[] = {
+        vsccRuleTerminal("amogus"),
+        vsccRuleTerminal("sus"),
+        vsccRuleEnd()
+    };
+
+    VsccRule *seq = vsccRuleOptional(vsccRuleSequence(rules, 3));
+
+    printf("seq ::= ");
+    vsccRulePrint(stdout, seq);
+    printf("\n");
+
+    vsccRuleDtor(seq);
+
     return 0;
 } // main
 
