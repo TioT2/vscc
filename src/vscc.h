@@ -28,13 +28,13 @@ struct __VsccRule {
 
     union {
         struct {
-            VsccRule * rules; ///< first element
-            size_t     count; ///< count of rules in sequence
+            VsccRule ** rules; ///< first element
+            size_t      count; ///< count of rules in sequence
         } sequence;
 
         struct {
-            VsccRule * rules; ///< rules
-            size_t     count; ///< count of rules
+            VsccRule ** rules; ///< rules
+            size_t      count; ///< count of rules
         } variant;
 
         struct {
@@ -42,7 +42,7 @@ struct __VsccRule {
             VsccRule * rule;        ///< repeated rule
         } repeat;
 
-        VsccRule *option;     ///< optional rule
+        VsccRule *optional;     ///< optional rule
         const char *terminal; ///< string constant
     };
 }; // struct __VsccRule
@@ -140,12 +140,6 @@ typedef struct __VsccGrammar {
     size_t            ruleCount; ///< count of rules
     VsccGrammarPair * rules;     ///< rules themselves
 } VsccGrammar;
-
-/// @brief generate C parser for some kind of 
-typedef struct __VsccGenerateInfo {
-    VsccGrammar * grammar; ///< grammar to generate text by
-    const char  * prefix;  ///< generated function prefix
-} VsccGenerateInfo;
 
 #endif // !defined(VSCC_H_)
 
