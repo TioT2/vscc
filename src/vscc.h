@@ -11,13 +11,14 @@
 
 /// @brief rule type ('tag')
 typedef enum __VsccRuleType {
-    VSCC_RULE_SEQUENCE,   ///< first and second    ... ...
-    VSCC_RULE_VARIANT,    ///< first or second     ... | ...
-    VSCC_RULE_OPTIONAL,   ///< once or none        ... ?
-    VSCC_RULE_REPEAT,     ///< repeat n times      ...* or ...+
-    VSCC_RULE_TERMINAL,   ///< terminal symbol     "..."
-    VSCC_RULE_END,        ///< sequence end        $
-    VSCC_RULE_EMPTY,      ///< empty rule          
+    VSCC_RULE_SEQUENCE,        ///< first and second           ... ...
+    VSCC_RULE_VARIANT,         ///< first or second            ... | ...
+    VSCC_RULE_OPTIONAL,        ///< once or none               ... ?
+    VSCC_RULE_REPEAT,          ///< repeat n times             ...* or ...+
+    VSCC_RULE_STRING_TERMINAL, ///< string terminal symbol     "..."
+    VSCC_RULE_REFERENCE,       ///< reference to another rule  ...
+    VSCC_RULE_END,             ///< sequence end               $
+    VSCC_RULE_EMPTY,           ///< empty rule                 
 } VsccRuleType;
 
 /// @brief grammar rule structure forward declaration
@@ -43,8 +44,9 @@ struct __VsccRule {
             VsccRule * rule;        ///< repeated rule
         } repeat;
 
-        VsccRule *optional;     ///< optional rule
-        const char *terminal; ///< string constant
+        VsccRule *optional;         ///< optional rule
+        const char *stringTerminal; ///< string constant
+        const char *reference;      ///< reference to another rule
     };
 }; // struct __VsccRule
 
@@ -98,7 +100,16 @@ VsccRule * vsccRuleRepeat( VsccRule *rule, bool atLeastOnce );
  * 
  * @return created rule
  */
-VsccRule * vsccRuleTerminal( const char *terminal );
+VsccRule * vsccRuleStringTerminal( const char *terminal );
+
+/**
+ * @brief referential rule constructor
+ * 
+ * @param[in] reference referenced rule name
+ * 
+ * @return created rule
+ */
+VsccRule * vsccRuleReference( const char *reference );
 
 /**
  * @brief rule that signals about sequence end create function
@@ -137,6 +148,34 @@ void vsccRuleDtor( VsccRule *rule );
  * @param[in] rule rule to display (non-null)
  */
 void vsccRulePrint( FILE *out, const VsccRule *rule );
+
+/// @brief rule parsing status
+typedef enum __VsccRuleParseStatus {
+    VSCC_RULE_PARSE_OK,             ///< parsing succeeded
+    VSCC_RULE_PARSE_INTERNAL_ERROR, ///< internal error occured
+} VsccRuleParseStatus;
+
+/// @brief rule parsing result
+typedef struct __VsccRuleParseResult {
+    VsccRuleParseStatus status; ///< operation status
+
+    union {
+        struct {
+            const char * rest;   ///< rest of string to be parsed
+            VsccRule   * result; ///< parsed rule
+        } ok; ///< successful result
+    };
+} VsccRuleParseResult;
+
+/**
+ * @brief rule parsing function
+ * 
+ * @param[in]  strBegin start of string slice to parse rule from
+ * @param[in]  strEnd   end of string slice to parse rule from
+ * 
+ * @return true if parsed, false if not
+ */
+VsccRuleParseResult vsccRuleParse( const char *strBegin, const char *strEnd );
 
 /// @brief name-rule pair
 typedef struct __VsccGrammarPair {

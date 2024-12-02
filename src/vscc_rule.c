@@ -109,7 +109,7 @@ VsccRule * vsccRuleRepeat( VsccRule *rule, bool atLeastOnce ) {
     return result;
 } // vsccRuleRepeat
 
-VsccRule * vsccRuleTerminal( const char *terminal ) {
+VsccRule * vsccRuleStringTerminal( const char *terminal ) {
     const size_t length = strlen(terminal);
     char *resultTerminal = NULL;
     VsccRule *result = NULL;
@@ -119,11 +119,27 @@ VsccRule * vsccRuleTerminal( const char *terminal ) {
 
     memcpy(resultTerminal, terminal, length);
 
-    result->type = VSCC_RULE_TERMINAL;
-    result->terminal = resultTerminal;
+    result->type = VSCC_RULE_STRING_TERMINAL;
+    result->stringTerminal = resultTerminal;
 
     return result;
-} // vsccRuleTerminal
+} // vsccRuleStringTerminal
+
+VsccRule * vsccRuleReference( const char *reference ) {
+    const size_t length = strlen(reference);
+    char *resultReference = NULL;
+    VsccRule *result = NULL;
+
+    if (!vsccRuleAlloc(length + 1, &result, (void **)&resultReference))
+        return NULL;
+
+    memcpy(resultReference, reference, length);
+
+    result->type = VSCC_RULE_REFERENCE;
+    result->reference = resultReference;
+
+    return result;
+} // vsccRuleReference
 
 VsccRule * vsccRuleEnd( void ) {
     VsccRule *result = NULL;
@@ -186,8 +202,11 @@ VsccRule * vsccRuleClone( const VsccRule *rule ) {
     case VSCC_RULE_REPEAT   :
         return vsccRuleRepeat(vsccRuleClone(rule->repeat.rule), rule->repeat.atLeastOnce);
 
-    case VSCC_RULE_TERMINAL :
-        return vsccRuleTerminal(rule->terminal);
+    case VSCC_RULE_STRING_TERMINAL :
+        return vsccRuleStringTerminal(rule->stringTerminal);
+
+    case VSCC_RULE_REFERENCE:
+        return vsccRuleReference(rule->reference);
 
     case VSCC_RULE_END      :
         return vsccRuleEnd();
@@ -220,7 +239,8 @@ void vsccRuleDtor( VsccRule *rule ) {
         vsccRuleDtor(rule->repeat.rule);
         break;
 
-    case VSCC_RULE_TERMINAL:
+    case VSCC_RULE_REFERENCE:
+    case VSCC_RULE_STRING_TERMINAL:
     case VSCC_RULE_END:
     case VSCC_RULE_EMPTY:
         break;
@@ -294,8 +314,12 @@ void vsccRulePrint( FILE *out, const VsccRule *rule ) {
         break;
     }
 
-    case VSCC_RULE_TERMINAL:
-        fprintf(out, "\"%s\"", rule->terminal);
+    case VSCC_RULE_STRING_TERMINAL:
+        fprintf(out, "\"%s\"", rule->stringTerminal);
+        break;
+
+    case VSCC_RULE_REFERENCE:
+        fprintf(out, "%s", rule->reference);
         break;
 
     case VSCC_RULE_END:

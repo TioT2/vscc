@@ -13,8 +13,8 @@
  */
 int main( void ) {
     VsccRule *rules[] = {
-        vsccRuleTerminal("amogus"),
-        vsccRuleTerminal("sus"),
+        vsccRuleStringTerminal("amogus"),
+        vsccRuleStringTerminal("sus"),
         vsccRuleEnd()
     };
 
