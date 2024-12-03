@@ -1,0 +1,15 @@
+# .VSG (Very Simple Grammar) file format example. This file represents grammar of .VSG format itself.
+
+grammar        ::= { rule? comment? "\n" }*
+comment        ::= "#" __char__*
+rule           ::= ident "::=" variants
+variants       ::= sequence { "|" sequence } *
+sequence       ::= expression +
+expression     ::= terminal { "?" | "+" | "*" | }
+
+# vsccRuleParseTerminal
+terminal       ::= stringTerminal | charTerminal | ident | anyChar | "{" variants "}"
+stringTerminal ::= "\"" __char__* "\""
+charTerminal   ::= "[" {__char__ | __char__ "-" __char__ }+ "]"
+anyChar        ::= "__char__"
+ident          ::= [a-zA-Z_] [a-zA-Z0-9_]*

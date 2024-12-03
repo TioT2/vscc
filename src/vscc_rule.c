@@ -16,6 +16,10 @@
  * @param[out] ruleDst            rule allocation destination (non-null)
  * @param[out] additionalDataDst  additional data destination (nullable if additionalDataSize == 0)
  * 
+ * @note resulting rule and additional data are safe to free by applying free() to ruleDst
+ * @note resulting rule and additional data are zeroed
+ * @note this function **is not** setting defasult values to ruleDst or additionalDataDst in case if function fails.
+ * 
  * @return true if allocated successfully, false if allocation failed.
  */
 static bool vsccRuleAlloc( size_t additionalDataSize, VsccRule **ruleDst, void **additionalDataDst ) {
@@ -109,20 +113,25 @@ VsccRule * vsccRuleRepeat( VsccRule *rule, bool atLeastOnce ) {
     return result;
 } // vsccRuleRepeat
 
-VsccRule * vsccRuleStringTerminal( const char *terminal ) {
-    const size_t length = strlen(terminal);
+VsccRule * vsccRuleStringTerminalFromSlice( const char *terminalBegin, const char *terminalEnd ) {
+    const size_t length = terminalEnd - terminalBegin;
     char *resultTerminal = NULL;
     VsccRule *result = NULL;
 
     if (!vsccRuleAlloc(length + 1, &result, (void **)&resultTerminal))
         return NULL;
 
-    memcpy(resultTerminal, terminal, length);
+    // vsccRuleAlloc result is zeroed
+    memcpy(resultTerminal, terminalBegin, length);
 
     result->type = VSCC_RULE_STRING_TERMINAL;
     result->stringTerminal = resultTerminal;
 
     return result;
+} // vsccRuleStringTerminalFromSlice
+
+VsccRule * vsccRuleStringTerminal( const char *terminal ) {
+    return vsccRuleStringTerminalFromSlice(terminal, terminal + strlen(terminal));
 } // vsccRuleStringTerminal
 
 VsccRule * vsccRuleCharTerminal( const VsccRuleCharRange *ranges, size_t count ) {
@@ -140,20 +149,24 @@ VsccRule * vsccRuleCharTerminal( const VsccRuleCharRange *ranges, size_t count )
     return result;
 } // vsccRuleCharTerminal
 
-VsccRule * vsccRuleReference( const char *reference ) {
-    const size_t length = strlen(reference);
+VsccRule * vsccRuleReferernceFromSlice( const char *refBegin, const char *refEnd ) {
+    const size_t length = refEnd - refBegin;
     char *resultReference = NULL;
     VsccRule *result = NULL;
 
     if (!vsccRuleAlloc(length + 1, &result, (void **)&resultReference))
         return NULL;
 
-    memcpy(resultReference, reference, length);
+    memcpy(resultReference, refBegin, length);
 
     result->type = VSCC_RULE_REFERENCE;
     result->reference = resultReference;
 
     return result;
+} // vsccRuleReferernceFromSlice
+
+VsccRule * vsccRuleReference( const char *reference ) {
+    return vsccRuleReferernceFromSlice(reference, reference + strlen(reference));
 } // vsccRuleReference
 
 VsccRule * vsccRuleEnd( void ) {

@@ -8,6 +8,74 @@
 #include <stdbool.h>
 #include <stdio.h>
 
+/// @brief dynamic array representation structure
+typedef struct __VsccArrayImpl * VsccArray;
+
+/**
+ * @brief array constructor
+ * 
+ * @param[in] elementSize single array element size ( > 0)
+ * 
+ * @return created array (may be NULL)
+ */
+VsccArray vsccArrayCtor( size_t elementSize );
+
+/**
+ * @brief array destructor
+ * 
+ * @param[in] array array to destroy (nullable)
+ */
+void vsccArrayDtor( VsccArray array );
+
+/**
+ * @brief array current capacity getting function
+ * 
+ * @param[in] array arrat to get capacity of (non-null)
+ * 
+ * @return size of array
+ */
+size_t vsccArraySize( const VsccArray array );
+
+/**
+ * @brief array data getting function
+ * 
+ * @param[in] array array to get data of (non-null)
+ * 
+ * @return array data start pointer
+ * 
+ * @note it's ok for user to read/write elementSize * vsccArraySize(...) bytes to this array.
+ */
+void * vsccArrayData( VsccArray array );
+
+/**
+ * @brief array element by index getting function
+ * 
+ * @param[in] array arrat to get pointer to element of
+ */
+void * vsccGetArrayElement( VsccArray array, size_t index );
+
+/**
+ * @brief pushing function
+ * 
+ * @param[in,out] array array to push data to (non-null)
+ * @param[in]     data  data to push (non-null, at least elementSize bytes readable)
+ * 
+ * @return true if operation succeeded, false if not
+ * 
+ * @note array repains unmodified in case if operation don't succeeded
+ */
+bool vsccArrayPush( VsccArray *array, const void *data );
+
+/**
+ * @brief popping function
+ * 
+ * @param[in,out] array array to pop data from (non-null)
+ * @param[out]    data  data to pop destination (nullable, at least elementSize bytes writable)
+ * 
+ * @return true if operation succeeded, false if not
+ */
+bool vsccArrayPop( VsccArray *array, void *data );
+
 /// @brief rule type ('tag')
 typedef enum __VsccRuleType {
     VSCC_RULE_SEQUENCE,        ///< first and second           ... ...
@@ -105,6 +173,16 @@ VsccRule * vsccRuleOptional( VsccRule *rule );
 VsccRule * vsccRuleRepeat( VsccRule *rule, bool atLeastOnce );
 
 /**
+ * @brief string terminal from string slice constructor
+ * 
+ * @param[in] terminalBegin begin of string slice to construct terminal from (inclusive, non-null)
+ * @param[in] terminalEnd   end of string slice to construct terminal from (exclusive, non-null, >= terminalBegin)
+ * 
+ * @return created rule
+ */
+VsccRule * vsccRuleStringTerminalFromSlice( const char *terminalBegin, const char *terminalEnd );
+
+/**
  * @brief terminal symbol rule constructor
  * 
  * @param[in] terminal terminal symbol to construct rule based on (non-null, null-terminated)
@@ -122,6 +200,16 @@ VsccRule * vsccRuleStringTerminal( const char *terminal );
  * @return created rule
  */
 VsccRule * vsccRuleCharTerminal( const VsccRuleCharRange *ranges, size_t count );
+
+/**
+ * @brief refererntial rule from string slice constructor
+ * 
+ * @param[in] refBegin begin of string slice to construct reference from (inclusive, non-null)
+ * @param[in] refEnd   end of string slice to construct reference from (exclusive, non-null, >= refBegin)
+ * 
+ * @return created rule
+ */
+VsccRule * vsccRuleReferernceFromSlice( const char *refBegin, const char *refEnd );
 
 /**
  * @brief referential rule constructor
@@ -172,8 +260,9 @@ void vsccRulePrint( FILE *out, const VsccRule *rule );
 
 /// @brief rule parsing status
 typedef enum __VsccRuleParseStatus {
-    VSCC_RULE_PARSE_OK,             ///< parsing succeeded
-    VSCC_RULE_PARSE_INTERNAL_ERROR, ///< internal error occured
+    VSCC_RULE_PARSE_OK,                   ///< parsing succeeded
+    VSCC_RULE_PARSE_INTERNAL_ERROR,       ///< internal error occured
+    VSCC_RULE_PARSE_UNEXPECTED_TEXT_END, ///< unexpected end of text slice 
 } VsccRuleParseStatus;
 
 /// @brief rule parsing result
@@ -181,10 +270,7 @@ typedef struct __VsccRuleParseResult {
     VsccRuleParseStatus status; ///< operation status
 
     union {
-        struct {
-            const char * rest;   ///< rest of string to be parsed
-            VsccRule   * result; ///< parsed rule
-        } ok; ///< successful result
+        VsccRule * ok; ///< parsed rule
     };
 } VsccRuleParseResult;
 
